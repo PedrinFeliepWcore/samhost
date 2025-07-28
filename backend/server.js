@@ -41,24 +41,100 @@
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
   // Servir arquivos estáticos do Wowza
-  app.use('/content', express.static('/usr/local/WowzaStreamingEngine/content', {
-    maxAge: '1h', // Cache por 1 hora
-    etag: true,
-    lastModified: true,
-    setHeaders: (res, path) => {
-      // Configurar headers CORS para vídeos
+  // Middleware personalizado para servir arquivos de vídeo
+  app.use('/content', async (req, res, next) => {
+    try {
+      const SSHManager = require('./config/SSHManager');
+      const path = require('path');
+      
+      // Extrair informações do caminho
+      const requestPath = req.path;
+      console.log(`📹 Solicitação de vídeo: ${requestPath}`);
+      
+      // Verificar se é um arquivo de vídeo
+      const isVideo = /\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i.test(requestPath);
+      
+      if (!isVideo) {
+        return res.status(404).json({ error: 'Arquivo não encontrado' });
+      }
+      
+      // Extrair usuário e caminho do arquivo
+      const pathParts = requestPath.split('/').filter(p => p);
+      if (pathParts.length < 3) {
+        return res.status(404).json({ error: 'Caminho inválido' });
+      }
+      
+      const userLogin = pathParts[0];
+      const folderName = pathParts[1];
+      const fileName = pathParts[2];
+      
+      // Caminho completo no servidor Wowza
+      const remotePath = `/usr/local/WowzaStreamingEngine/content/${userLogin}/${folderName}/${fileName}`;
+      
+      console.log(`🔍 Verificando arquivo: ${remotePath}`);
+      
+      // Verificar se arquivo existe no servidor via SSH
+      const serverId = 1; // Usar servidor padrão por enquanto
+      const fileInfo = await SSHManager.getFileInfo(serverId, remotePath);
+      
+      if (!fileInfo.exists) {
+        console.log(`❌ Arquivo não encontrado: ${remotePath}`);
+        return res.status(404).json({ error: 'Arquivo não encontrado no servidor' });
+      }
+      
+      console.log(`✅ Arquivo encontrado: ${remotePath}`);
+      
+      // Configurar headers para streaming de vídeo
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Range');
       res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
       
-      // Headers para cache de vídeos
-      if (path.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i)) {
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        res.setHeader('Content-Type', 'video/mp4');
+      // Para desenvolvimento, redirecionar para URL direta do Wowza
+      const isProduction = process.env.NODE_ENV === 'production';
+      const wowzaUrl = isProduction ? 
+        `http://51.222.156.223:1935/samhost${requestPath}` :
+        `http://51.222.156.223:1935/samhost${requestPath}`;
+      
+      console.log(`🔗 Redirecionando para: ${wowzaUrl}`);
+      
+      // Fazer proxy da requisição para o servidor Wowza
+      const fetch = require('node-fetch');
+      
+      try {
+        const wowzaResponse = await fetch(wowzaUrl, {
+          method: req.method,
+          headers: {
+            'Range': req.headers.range || '',
+            'User-Agent': 'Streaming-System/1.0'
+          }
+        });
+        
+        if (!wowzaResponse.ok) {
+          console.log(`❌ Erro do Wowza: ${wowzaResponse.status}`);
+          return res.status(404).json({ error: 'Vídeo não disponível no servidor de streaming' });
+        }
+        
+        // Copiar headers da resposta do Wowza
+        wowzaResponse.headers.forEach((value, key) => {
+          res.setHeader(key, value);
+        });
+        
+        // Fazer pipe do stream
+        wowzaResponse.body.pipe(res);
+        
+      } catch (fetchError) {
+        console.error('❌ Erro ao acessar Wowza:', fetchError);
+        return res.status(500).json({ error: 'Erro interno do servidor de streaming' });
       }
+      
+    } catch (error) {
+      console.error('❌ Erro no middleware de vídeo:', error);
+      return res.status(500).json({ error: 'Erro interno do servidor' });
     }
-  }));
+  });
   
   // Servir arquivos estáticos do frontend em produção
   if (isProduction) {

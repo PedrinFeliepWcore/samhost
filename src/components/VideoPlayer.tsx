@@ -59,12 +59,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ playlistVideo, onVideoEnd }) 
       return url;
     }
     
-    // Verificar se estamos em produção ou desenvolvimento
-    const isProduction = window.location.hostname !== 'localhost';
-    const baseUrl = isProduction ? 'http://samhost.wcore.com.br' : window.location.origin;
+    // Sempre usar o servidor local como proxy
+    const baseUrl = window.location.origin;
     
     // Garantir que a URL comece com /content
     const videoPath = url.startsWith('/content') ? url : `/content${url}`;
+    
+    console.log('🎥 URL do vídeo construída:', `${baseUrl}${videoPath}`);
     return `${baseUrl}${videoPath}`;
   };
 

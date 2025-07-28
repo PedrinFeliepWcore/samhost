@@ -227,7 +227,7 @@ class SSHManager {
 
     async getFileInfo(serverId, remotePath) {
         try {
-            const command = `stat "${remotePath}" 2>/dev/null || echo "FILE_NOT_FOUND"`;
+            const command = `ls -la "${remotePath}" 2>/dev/null || echo "FILE_NOT_FOUND"`;
             const result = await this.executeCommand(serverId, command);
             
             if (result.stdout.includes('FILE_NOT_FOUND')) {
@@ -236,10 +236,30 @@ class SSHManager {
 
             return { 
                 exists: true, 
-                info: result.stdout 
+                info: result.stdout,
+                size: this.extractFileSize(result.stdout),
+                permissions: this.extractPermissions(result.stdout)
             };
         } catch (error) {
             return { exists: false };
+        }
+    }
+
+    extractFileSize(lsOutput) {
+        try {
+            const parts = lsOutput.trim().split(/\s+/);
+            return parseInt(parts[4]) || 0;
+        } catch (error) {
+            return 0;
+        }
+    }
+
+    extractPermissions(lsOutput) {
+        try {
+            const parts = lsOutput.trim().split(/\s+/);
+            return parts[0] || '';
+        } catch (error) {
+            return '';
         }
     }
 
