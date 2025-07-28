@@ -95,7 +95,7 @@
       // Para desenvolvimento, redirecionar para URL direta do Wowza
       const isProduction = process.env.NODE_ENV === 'production';
       const wowzaUrl = isProduction ? 
-        `http://51.222.156.223:1935/samhost${requestPath}` :
+        `http://samhost.wcore.com.br:1935/samhost${requestPath}` :
         `http://51.222.156.223:1935/samhost${requestPath}`;
       
       console.log(`🔗 Redirecionando para: ${wowzaUrl}`);

@@ -84,7 +84,7 @@ router.get('/:id/videos', authMiddleware, async (req, res) => {
       videos: {
         id: video.id,
         nome: video.nome,
-        url: video.url ? `/content${video.url}` : null,
+        url: video.url ? video.url : null,
         duracao: video.duracao
       }
     }));

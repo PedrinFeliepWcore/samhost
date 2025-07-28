@@ -72,7 +72,7 @@ router.get('/', authMiddleware, async (req, res) => {
     // Ajustar URLs para serem acessíveis via HTTP
     const logos = rows.map(logo => ({
       ...logo,
-      url: logo.url ? `/content/${userEmail}/logos/${path.basename(logo.url)}` : null
+      url: logo.url ? `/${userEmail}/logos/${path.basename(logo.url)}` : null
     }));
 
     res.json(logos);
@@ -143,7 +143,7 @@ router.post('/', authMiddleware, upload.single('logo'), async (req, res) => {
     res.status(201).json({
       id: result.insertId,
       nome: nome,
-      url: `/content/${userLogin}/logos/${req.file.filename}`,
+      url: `/${userLogin}/logos/${req.file.filename}`,
       tamanho: req.file.size,
       tipo_arquivo: req.file.mimetype
     });

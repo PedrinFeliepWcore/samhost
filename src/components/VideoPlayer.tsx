@@ -59,14 +59,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ playlistVideo, onVideoEnd }) 
       return url;
     }
     
-    // Sempre usar o servidor local como proxy
-    const baseUrl = window.location.origin;
+    // Usar diretamente o servidor Wowza para vídeos
+    const isProduction = window.location.hostname === 'samhost.wcore.com.br';
+    const wowzaBaseUrl = isProduction ? 
+      'http://samhost.wcore.com.br:1935/samhost' : 
+      'http://51.222.156.223:1935/samhost';
     
-    // Garantir que a URL comece com /content
-    const videoPath = url.startsWith('/content') ? url : `/content${url}`;
+    // Remover /content se existir e construir URL do Wowza
+    const cleanPath = url.replace('/content', '').replace(/^\/+/, '');
+    const videoUrl = `${wowzaBaseUrl}/${cleanPath}`;
     
-    console.log('🎥 URL do vídeo construída:', `${baseUrl}${videoPath}`);
-    return `${baseUrl}${videoPath}`;
+    console.log('🎥 URL do vídeo construída:', videoUrl);
+    return videoUrl;
   };
 
   const videoSrc = playlistVideo?.url ? getVideoUrl(playlistVideo.url) : 

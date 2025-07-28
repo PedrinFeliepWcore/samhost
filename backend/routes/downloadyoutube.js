@@ -74,7 +74,7 @@ router.post('/', authMiddleware, async (req, res) => {
         video: {
           id: result.insertId,
           nome: videoTitle,
-          url: `/content${relativePath}`,
+          url: relativePath,
           duracao: 210,
           tamanho: 1024 * 1024 // 1MB placeholder
         }

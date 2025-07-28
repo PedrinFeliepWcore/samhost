@@ -244,6 +244,22 @@ const Comerciais: React.FC = () => {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  const getVideoUrl = (url: string) => {
+    if (!url) return '';
+    
+    if (url.startsWith('http')) {
+      return url;
+    }
+    
+    const isProduction = window.location.hostname === 'samhost.wcore.com.br';
+    const wowzaBaseUrl = isProduction ? 
+      'http://samhost.wcore.com.br:1935/samhost' : 
+      'http://51.222.156.223:1935/samhost';
+    
+    const cleanPath = url.replace('/content', '').replace(/^\/+/, '');
+    return `${wowzaBaseUrl}/${cleanPath}`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center mb-6">
@@ -482,7 +498,7 @@ const Comerciais: React.FC = () => {
                       )}
                       {video.url && (
                         <video
-                          src={video.url}
+                          src={getVideoUrl(video.url)}
                           className="w-full h-32 object-cover rounded"
                           controls
                           preload="metadata"

@@ -83,14 +83,15 @@ function ModalVideo({
       return video.url;
     }
     
-    // Se é uma URL relativa, construir a URL completa
-    // Verificar se estamos em produção ou desenvolvimento
+    // Construir URL diretamente para o servidor Wowza
     const isProduction = window.location.hostname === 'samhost.wcore.com.br';
-    const baseUrl = isProduction ? 'http://samhost.wcore.com.br' : 'http://localhost:3000';
+    const wowzaBaseUrl = isProduction ? 
+      'http://samhost.wcore.com.br:1935/samhost' : 
+      'http://51.222.156.223:1935/samhost';
     
-    // Garantir que a URL comece com /content
-    const videoPath = video.url.startsWith('/content') ? video.url : `/content${video.url}`;
-    return `${baseUrl}${videoPath}`;
+    // Remover /content se existir e construir URL do Wowza
+    const cleanPath = video.url.replace('/content', '').replace(/^\/+/, '');
+    return `${wowzaBaseUrl}/${cleanPath}`;
   };
 
   return (
